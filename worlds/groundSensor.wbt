@@ -19,6 +19,21 @@ PointLight {
   location 0.8 1 0.8
   castShadows TRUE
 }
+DEF GA Supervisor {
+  children [
+    Receiver {
+      channel 2
+    }
+    Emitter {
+      channel 1
+    }
+    Display {
+      width 200
+      height 100
+    }
+  ]
+  controller "advanced_genetic_algorithm_supervisor"
+}
 PointLight {
   location -1.1 1.2 1.3
 }
