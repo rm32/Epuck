@@ -168,7 +168,7 @@ DEF wall Solid {
     size 0.01 0.1 0.55
   }
 }
-DEF EPUCK E-puck {
+DEF ROBOT E-puck {
   hidden translation_1 -0.0262985 0.0200531 -5.30233e-05
   hidden rotation_1 0.999993 -0.00327835 -0.00151045 -1.7735
   hidden translation_2 0.0262981 0.0200518 4.87088e-05
