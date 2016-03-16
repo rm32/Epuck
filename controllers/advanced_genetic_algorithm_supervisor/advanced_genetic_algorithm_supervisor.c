@@ -87,7 +87,7 @@ double measure_fitness() {
   double w[NUM_WHEELS * sizeof(double)];
   double fitness;
   printf("receiver: %d\n", wb_receiver_get_queue_length(receiver));
-  if (wb_receiver_get_queue_length(receiver) > 0) {
+  if(wb_receiver_get_queue_length(receiver) > 0) {
 
     memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS)* sizeof(double));
     memcpy(s, data_received, NUM_SENSORS * sizeof(double));

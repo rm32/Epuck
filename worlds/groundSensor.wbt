@@ -6,8 +6,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation 0.945205 0.296954 0.135668 5.38264
-  position -0.794111 3.14272 2.9437
+  orientation 0.262312 0.856568 0.444391 4.07782
+  position -0.714072 1.16558 -0.510728
 }
 Background {
   skyColor [
@@ -169,12 +169,12 @@ DEF wall Solid {
   }
 }
 DEF EPUCK E-puck {
-  hidden translation_1 -0.0262985 0.0200511 -5.30201e-05
+  hidden translation_1 -0.0262985 0.0200531 -5.30233e-05
   hidden rotation_1 0.999993 -0.00327835 -0.00151045 -1.7735
-  hidden translation_2 0.0262981 0.0200497 4.87152e-05
+  hidden translation_2 0.0262981 0.0200518 4.87088e-05
   hidden rotation_2 0.999994 0.00161802 0.00298382 2.00534
-  translation -0.741427 -0.000106673 -0.0320492
-  rotation 4.0376e-06 1 3.45299e-06 1.67445
+  translation 0.0685382 -0.000108538 -0.0724868
+  rotation 3.83499e-06 1 2.28877e-06 1.67443
   controller "advanced_genetic_algorithm"
   groundSensorsSlot [
     E-puckGroundSensors {

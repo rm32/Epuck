@@ -102,8 +102,8 @@ void sense_compute_and_actuate() {
 
   //Append wheel speed to data_emitter
   memcpy(data_emitted + 8, wheel_speed, 2 * sizeof(float));
-  //printf("left wheel: %f\n", wheel_speed[0]);
-  //printf("right wheel: %f\n", wheel_speed[1]);
+  printf("left wheel: %f\n", wheel_speed[0]);
+  printf("right wheel: %f\n", wheel_speed[1]);
 
   // actuate e-puck wheels
   wb_differential_wheels_set_speed(wheel_speed[0], wheel_speed[1]);
