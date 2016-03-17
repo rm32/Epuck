@@ -6,8 +6,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation 0.262312 0.856568 0.444391 4.07782
-  position -0.714072 1.16558 -0.510728
+  orientation 0.972761 0.201338 0.114889 5.22208
+  position -0.505985 3.60259 2.35643
 }
 Background {
   skyColor [
@@ -46,7 +46,7 @@ DEF floor Solid {
         }
         texture ImageTexture {
           url [
-            "/Users/roshenacmitchell/Epuck_Real/THICK.png"
+            "/media/giannis/Data/Heriot Watt/Semester 2/Intelligent Robotics/Assignment 2/RatWorld/Epuck/THICK.png"
           ]
         }
       }
@@ -169,13 +169,20 @@ DEF wall Solid {
   }
 }
 DEF ROBOT E-puck {
-  hidden translation_1 -0.0262985 0.0200531 -5.30233e-05
-  hidden rotation_1 0.999993 -0.00327835 -0.00151045 -1.7735
-  hidden translation_2 0.0262981 0.0200518 4.87088e-05
-  hidden rotation_2 0.999994 0.00161802 0.00298382 2.00534
-  translation 0.0685382 -0.000108538 -0.0724868
-  rotation 3.83499e-06 1 2.28877e-06 1.67443
+  hidden linearVelocity_0 0.000323879 -5.67631e-08 0.000617231
+  hidden angularVelocity_0 2.19349e-07 0.0244207 -1.1306e-06
+  hidden translation_1 -0.0263073 0.0200767 -6.89302e-05
+  hidden rotation_1 0.999819 0.00204725 0.0189382 0.295987
+  hidden linearVelocity_1 0.000966339 -8.3904e-08 0.000601698
+  hidden angularVelocity_1 0.0300196 0.0255695 1.84424
+  hidden translation_2 0.0263057 0.0200763 3.28912e-05
+  hidden rotation_2 0.999996 0.000275657 0.00277462 2.5642
+  hidden linearVelocity_2 -0.000318695 -5.8896e-08 0.000632621
+  hidden angularVelocity_2 0.0408027 0.0259527 2.51167
+  translation 0.0423883 -0.000101613 -0.0329709
+  rotation 0.00115142 0.999998 -0.00174182 1.58773
   controller "advanced_genetic_algorithm"
+  emitter_channel 2
   groundSensorsSlot [
     E-puckGroundSensors {
     }

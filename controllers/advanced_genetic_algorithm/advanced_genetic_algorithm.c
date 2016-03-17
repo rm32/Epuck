@@ -18,6 +18,14 @@
 // each each sensor has a weight for each wheel
 double matrix[NUM_SENSORS + 2][NUM_WHEELS]; 
 double previous_wheels_speed[NUM_WHEELS];
+int time_step;
+int emitter_counter, steps;
+double sensor_values[NUM_SENSORS];
+// read sensor values
+double* data_emitted;
+//output neurons:
+double wheel_speed[NUM_WHEELS] = { 0.0, 0.0 };
+double mean_wheel_speed[NUM_WHEELS];
 
 WbDeviceTag sensors[NUM_SENSORS];  // proximity sensors
 WbDeviceTag receiver;              // for receiving genes from Supervisor
@@ -66,22 +74,17 @@ static double clip_value(double value, double min_max) {
 }
 
 void sense_compute_and_actuate() {
-  // read sensor values
-  double sensor_values[NUM_SENSORS];
-  double* data_emitted = malloc(10 * sizeof(double));
+  
   int i, j;
   for (i = 0; i < NUM_SENSORS; i++){
 
     //input neurons:
+    //get the sumed value of each sensor so we can calculate the mean value before sending them back
     sensor_values[i] += wb_distance_sensor_get_value(sensors[i]);
     //printf("sensor %d %f\n", i, sensor_values[i]);  
   }
   
-  memcpy(data_emitted, sensor_values, 8 * sizeof(double));
   
-  //TODO: HERE GOES THE RNN INSTEAD!!!!
-  //output neurons:
-  double wheel_speed[NUM_WHEELS] = { 0.0, 0.0 };
   double sum = 0.0;
   for (i = 0; i < NUM_WHEELS; i++){
     for (j = 0; j < NUM_SENSORS; j++){
@@ -99,19 +102,14 @@ void sense_compute_and_actuate() {
   // clip to e-puck max speed values to avoid warning
   wheel_speed[0] = clip_value(wheel_speed[0], 1000.0);
   wheel_speed[1] = clip_value(wheel_speed[1], 1000.0);
-
-  //Append wheel speed to data_emitter
-  memcpy(data_emitted + 8, wheel_speed, 2 * sizeof(float));
-  //printf("left wheel: %f\n", wheel_speed[0]);
-  //printf("right wheel: %f\n", wheel_speed[1]);
+  mean_wheel_speed[0] += wheel_speed[0];
+  mean_wheel_speed[1] += wheel_speed[1];
 
   // actuate e-puck wheels
   wb_differential_wheels_set_speed(wheel_speed[0], wheel_speed[1]);
   previous_wheels_speed[0] = wheel_speed[0];
   previous_wheels_speed[1] = wheel_speed[1];
   
-  // send sensor values to supervisor for evaluation
-  wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS) * sizeof(double));
 }
 
 int main(int argc, const char *argv[]) {
@@ -119,8 +117,15 @@ int main(int argc, const char *argv[]) {
   wb_robot_init();  // initialize Webots
 
   // find simulation step in milliseconds (WorldInfo.basicTimeStep)
-  int time_step = wb_robot_get_basic_time_step();
+  time_step = wb_robot_get_basic_time_step();
+  printf("time step: %d\n",time_step);
     
+  //initialize the emitter counter to send data back to the supervisor  
+  emitter_counter = 60000/time_step;
+
+  //copy emitter counter to a variable to use the initial value later
+  steps = emitter_counter;
+
   // find and enable proximity sensors
   char name[32];
   int i;
@@ -143,8 +148,34 @@ int main(int argc, const char *argv[]) {
   
   // run until simulation is restarted
   while (wb_robot_step(time_step) != -1) {
+  
     check_for_new_genes();
     sense_compute_and_actuate();
+    
+    emitter_counter--;
+    //printf("step: %d\n", emitter_counter);
+    
+    if (emitter_counter == 0){
+      data_emitted = malloc(10 * sizeof(double));
+
+      //calculate the mean value of each wheel
+      mean_wheel_speed[0] = mean_wheel_speed[0]/steps;
+      mean_wheel_speed[1] = mean_wheel_speed[1]/steps;
+
+      //calculate the mean value of each sensor
+      for (i=0; i< NUM_SENSORS; i++){
+        sensor_values[i] = sensor_values[i]/steps;
+      }
+
+      memcpy(data_emitted, sensor_values, 8 * sizeof(double));
+
+      //Append wheel speed to data_emitter
+      memcpy(data_emitted + 8, wheel_speed, 2 * sizeof(float));
+
+      // send data to supervisor for evaluation and reset the counter
+      wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS) * sizeof(double));
+      emitter_counter = steps;
+    }
   }
   
   wb_robot_cleanup();  // cleanup Webots
