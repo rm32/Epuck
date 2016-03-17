@@ -19,7 +19,7 @@ static const int NUM_GENERATIONS = 10;
 static const char *FILE_NAME = "fittest.txt";
 
 // must match the values in the advanced_genetic_algorithm.c code
-#define NUM_SENSORS 8
+#define NUM_SENSORS 10
 #define NUM_WHEELS 2
 #define GENOTYPE_SIZE (NUM_SENSORS * NUM_WHEELS) + 4
 
@@ -105,7 +105,7 @@ double measure_fitness() {
      double sum_sensor_values = 0.0;
      for (i = 0; i < NUM_SENSORS; i++){
         sum_sensor_values += s[i];
-        //printf("Distance sensor %f\n", s[i]);
+        printf("Distance sensor %f\n", s[i]);
      }
     fitness = dist + self_rot + 10 / sum_sensor_values;
 

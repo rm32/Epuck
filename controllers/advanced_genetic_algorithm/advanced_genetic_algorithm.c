@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#define NUM_SENSORS 8
+#define NUM_SENSORS 10
 #define NUM_WHEELS 2
 #define GENOTYPE_SIZE (NUM_SENSORS * NUM_WHEELS) + 4
 
@@ -129,11 +129,19 @@ int main(int argc, const char *argv[]) {
   // find and enable proximity sensors
   char name[32];
   int i;
-  for (i = 0; i < NUM_SENSORS; i++) {
+ 
+   for (i = 0; i < 8; i++) {
     sprintf(name, "ps%d", i);
     sensors[i] = wb_robot_get_device(name);
     wb_distance_sensor_enable(sensors[i], time_step);
   }
+  
+   for (i = 0; i < 2; i++) {
+    sprintf(name, "gs%d", i);
+    sensors[i + 8] = wb_robot_get_device(name);
+    wb_distance_sensor_enable(sensors[i + 8], time_step);
+ } 
+   
     
   // the emitter to send fitness value to supervisor
   emitter = wb_robot_get_device("emitter");
@@ -167,10 +175,10 @@ int main(int argc, const char *argv[]) {
         sensor_values[i] = sensor_values[i]/steps;
       }
 
-      memcpy(data_emitted, sensor_values, 8 * sizeof(double));
+      memcpy(data_emitted, sensor_values, NUM_SENSORS * sizeof(double));
 
       //Append wheel speed to data_emitter
-      memcpy(data_emitted + 8, wheel_speed, 2 * sizeof(float));
+      memcpy(data_emitted + NUM_SENSORS , wheel_speed, NUM_WHEELS * sizeof(float));
 
       // send data to supervisor for evaluation and reset the counter
       wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS) * sizeof(double));
