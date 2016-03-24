@@ -32,7 +32,7 @@ Genotype genotype_create() {
   int i;
   for (i = 0; i < genotype_size; i++)
     //gen->genes[i] = random_get_uniform();
-    gen->genes[i] = random_negative_positive();
+    gen->genes[i] = random_get_uniform();
   return gen;
 }
 

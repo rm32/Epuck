@@ -14,8 +14,8 @@
 #include <webots/differential_wheels.h>
 #include <stdlib.h>
 
-static const int POPULATION_SIZE = 60;
-static const int NUM_GENERATIONS = 15;
+static const int POPULATION_SIZE = 50;
+static const int NUM_GENERATIONS = 10;
 static const char *FILE_NAME = "fittest.txt";
 
 // must match the values in the advanced_genetic_algorithm.c code
@@ -123,10 +123,10 @@ double measure_fitness() {
          cliff= 1;
        }
      }
-     printf("Distance sensor %f\n", sum_sensor_values);
+     //printf("Distance sensor %f\n", sum_sensor_values);
      //printf("dist: %f\n", dist);
      //printf("ds: %f\n", 5*(1 / sum_sensor_values));
-    fitness = (5*dist + (1 / 100*sum_sensor_values) )*cliff;
+    fitness = (5*dist + (1 / 10*sum_sensor_values) )*cliff;
 
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
@@ -142,15 +142,12 @@ void evaluate_genotype(Genotype genotype) {
   wb_emitter_send(emitter, genotype_get_genes(genotype), GENOTYPE_SIZE * sizeof(double));
   
   // reset robot position
-  printf("Y axis: %f\n", robot_trans0[1]);
-  if (robot_trans0[1] != 0.0)
-    robot_trans0[1] = 0.0;
   wb_supervisor_field_set_sf_vec3f(robot_translation, robot_trans0);
   wb_supervisor_field_set_sf_rotation(robot_rotation, robot_rot0);
   // wb_supervisor_field_set_sf_vec3f(load_translation, load_trans0);
 
   // evaluation genotype during one minute
-  run_seconds(300.0);
+  run_seconds(60.0);
   
   // measure fitness
   double fitness = measure_fitness();

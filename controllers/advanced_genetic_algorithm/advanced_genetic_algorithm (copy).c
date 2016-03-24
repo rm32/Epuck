@@ -18,7 +18,7 @@
 // sensor to wheels multiplication matrix
 // each each sensor has a weight for each wheel
 double matrix[NUM_SENSORS + 2][NUM_WHEELS]; 
-double ctx[NUM_WHEELS];
+double previous_wheels_speed[NUM_WHEELS];
 int time_step;
 int emitter_counter, steps;
 double sensor_values[NUM_SENSORS];
@@ -47,6 +47,7 @@ double sigmoid(double x)
 
      return return_value;
 }
+
 
 // check if a new set of genes was sent by the Supervisor
 // in this case start using these new genes immediately
@@ -102,14 +103,13 @@ void sense_compute_and_actuate() {
     }
 
     //add the recurrent connections on the output layer from the previous time step
-    sum += matrix[NUM_SENSORS][i] * (1.0 - (ctx[i] / RANGE));
-    sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (ctx[(i + 1)%2] / RANGE));
-    //sum += matrix[NUM_SENSORS][i] * ctx[i];
-    //sum += matrix[NUM_SENSORS + 1][i] * ctx[(i + 1)%2];
+    sum += matrix[NUM_SENSORS][i] * (1.0 - (previous_wheels_speed[i] / RANGE));
+    sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (previous_wheels_speed[(i + 1)%2] / RANGE));
+    //sum += matrix[NUM_SENSORS][i] * previous_wheels_speed[i];
+    //sum += matrix[NUM_SENSORS + 1][i] * previous_wheels_speed[(i + 1)%2];
 
     //apply the activation function to the weighted inputs
-    wheel_speed[i] = tanh(sum);
-    sum = 0.0;
+    wheel_speed[i] = 500 + 1000*tanh(sum);
   }  
 
   // clip to e-puck max speed values to avoid warning
@@ -123,11 +123,11 @@ void sense_compute_and_actuate() {
   mean_wheel_speed[1] += wheel_speed[1];
 
   // actuate e-puck wheels
-  wb_differential_wheels_set_speed(500*wheel_speed[0], 500*wheel_speed[1]);
+  wb_differential_wheels_set_speed(wheel_speed[0], wheel_speed[1]);
 
   //save current speeds to be used as previous speed on next run
-  ctx[0] = wheel_speed[0];
-  ctx[1] = wheel_speed[1];
+  previous_wheels_speed[0] = wheel_speed[0];
+  previous_wheels_speed[1] = wheel_speed[1];
   
 }
 
@@ -173,8 +173,6 @@ int main(int argc, const char *argv[]) {
   // wheels will initially be stopped
   memset(matrix, 0.0, sizeof(matrix));
   
-  
-  //load_best();
   // run until simulation is restarted
   while (wb_robot_step(time_step) != -1) {
   
@@ -194,7 +192,7 @@ int main(int argc, const char *argv[]) {
       //calculate the mean value of each sensor
       for (i=0; i< NUM_SENSORS-2; i++){
         sensor_values[i] = sensor_values[i]/steps;
-        //sensor_values[i]  /= 4096; //normalize the sensor values
+        sensor_values[i]  /= 4096; //normalize the sensor values
         //printf("sensor %d value: %f\n",i,sensor_values[i]);
       }
       //printf("sensor %d value: %f\n",8,sensor_values[8]);
