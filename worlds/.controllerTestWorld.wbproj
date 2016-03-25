@@ -1,0 +1,10 @@
+Webots Project File version 8.3.2
+perspectives: 000000ff00000000fd0000000200000001000002d6000002d8fc0200000001fb0000001400540065007800740045006400690074006f00720100000017000002d8000000aa00ffffff000000030000077e000000f9fc0100000001fb0000000e0043006f006e0073006f006c006501000000000000077e0000005a00ffffff000004a2000002d800000001000000020000000100000008fc00000000
+simulationViewPerspectives: 000000ff00000001000000020000011e000002fb0100000006010000000100
+sceneTreePerspectives: 000000ff0000000100000002000000c0000000ee0100000006010000000200
+minimizedPerspectives: 
+maximizedDockId: -1
+centralWidgetVisible: 1
+orthographicViewHeight: 1
+textFiles: 1 "controllers/advanced_genetic_algorithm_supervisor/advanced_genetic_algorithm_supervisor.c" "controllers/advanced_genetic_algorithm/advanced_genetic_algorithm.c" "../../../../../../../../home/giannis/.local/share/Cyberbotics/Webots/8.3/projects/default/controllers/braitenberg/braitenberg.c" "../../../../../../../../home/giannis/.local/share/Cyberbotics/Webots/8.3/projects/robots/e-puck/controllers/e-puck_avoid_obstacles/e-puck_avoid_obstacles.c" "controllers/controllerTester/controllerTester.c"
+renderingDevicePerspectives: 301;1;1;0.0302013;0.030597

@@ -21,8 +21,8 @@ static const char *FILE_NAME = "fittest.txt";
 // must match the values in the advanced_genetic_algorithm.c code
 #define NUM_SENSORS 10
 #define NUM_WHEELS 2
-#define GENOTYPE_SIZE ((HIDDEN * (NUM_SENSORS + 2)) + (NUM_WHEELS * HIDDEN))
-#define HIDDEN 5
+#define GENOTYPE_SIZE 70 //((HIDDEN * (NUM_SENSORS + 2)) + (NUM_WHEELS * HIDDEN))
+#define HIDDEN 10
 
 // index access
 enum { X, Y, Z };
@@ -88,7 +88,7 @@ double measure_fitness() {
   double s[NUM_SENSORS * sizeof(double)];
   double w[NUM_WHEELS * sizeof(double)];
   double fitness;
-  //printf("receiver: %d\n", wb_receiver_get_queue_length(receiver));
+  printf("receiver: %d\n", wb_receiver_get_queue_length(receiver));
   if (wb_receiver_get_queue_length(receiver) > 0) {
 
     memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS)* sizeof(double));

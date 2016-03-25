@@ -12,14 +12,13 @@
 
 #define NUM_SENSORS 10
 #define NUM_WHEELS 2
-#define GENOTYPE_SIZE ((HIDDEN * (NUM_SENSORS + 2)) + (NUM_WHEELS * HIDDEN))
+#define GENOTYPE_SIZE 70 //((HIDDEN * (NUM_SENSORS + 2)) + (NUM_WHEELS * HIDDEN))
 #define RANGE (1024/2)
 #define HIDDEN 10
 
 // sensor to wheels multiplication matrix
 // each each sensor has a weight for each wheel
 double matrix[NUM_SENSORS + 2][NUM_WHEELS]; 
-double ctx[NUM_WHEELS];
 double ctx[NUM_WHEELS];
 int time_step;
 int emitter_counter, steps;
@@ -85,18 +84,18 @@ static double clip_value(double value, double min_max) {
 }
 
 void sense_compute_and_actuate() {
-  
+  printf("aaaaaaaaaaaaaaaaaa");
   int i, j, k;
   for (i = 0; i < NUM_SENSORS - 2; i++){
     //get the sumed value of each sensor so we can calculate the mean value before sending them back
     mean_sensor_values[i] += wb_distance_sensor_get_value(sensors[i]);
     sensor_values[i] = wb_distance_sensor_get_value(sensors[i]);
-    //printf("sensor %d %f\n", i, sensor_values[i]);  
+    printf("sensor %d %f\n", i, sensor_values[i]);  
   }
   for (i = 8; i < NUM_SENSORS; i++){
      
     if (wb_distance_sensor_get_value(sensors[i]) > 800){
-    //printf("sensor %d %f\n", i, wb_distance_sensor_get_value(sensors[i])); 
+    printf("sensor %d %f\n", i, wb_distance_sensor_get_value(sensors[i])); 
       sensor_values[i] += -1.0;
     }else{
       sensor_values[i] += 0.0;

@@ -14,14 +14,14 @@
 #include <webots/differential_wheels.h>
 #include <stdlib.h>
 
-static const int POPULATION_SIZE = 60;
-static const int NUM_GENERATIONS = 15;
+static const int POPULATION_SIZE = 50;
+static const int NUM_GENERATIONS = 10;
 static const char *FILE_NAME = "fittest.txt";
 
 // must match the values in the advanced_genetic_algorithm.c code
 #define NUM_SENSORS 10
 #define NUM_WHEELS 2
-#define GENOTYPE_SIZE (NUM_SENSORS * NUM_WHEELS) + 4
+#define GENOTYPE_SIZE ((NUM_SENSORS * NUM_WHEELS) + 4)
 
 // index access
 enum { X, Y, Z };
@@ -47,7 +47,7 @@ static double robot_rot0[4];    // a rotation needs 4 doubles
   
 // start with a demo until the user presses the 'O' key
 // (change this if you want)
-static bool demo = false;
+static bool demo = true;
 
 void draw_scaled_line(int generation, double y1, double y2) {
   const double XSCALE = (double)display_width / NUM_GENERATIONS;
@@ -80,31 +80,27 @@ void run_seconds(double seconds) {
   }
 }
 
-// compute fitness as the euclidian distance that the load was pushed
+// compute fitness
 double measure_fitness() {
 
-  double data_received[NUM_SENSORS + NUM_WHEELS];
+  double data_received[NUM_SENSORS + NUM_WHEELS + 1];
   double s[NUM_SENSORS * sizeof(double)];
   double w[NUM_WHEELS * sizeof(double)];
   double fitness;
+  double dist[1];
   //printf("receiver: %d\n", wb_receiver_get_queue_length(receiver));
   if (wb_receiver_get_queue_length(receiver) > 0) {
 
-    memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS)* sizeof(double));
-    int ss;
-    //for (ss=0;ss < 12;ss++){
-    //  printf("received: %f\n",data_received[ss]);
-    //}
+    memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
     
     memcpy(s, data_received, NUM_SENSORS * sizeof(double));
     memcpy(w, data_received + NUM_SENSORS, NUM_WHEELS * sizeof(double));
-    
-    const double *robot_trans = wb_supervisor_field_get_sf_vec3f(robot_translation);
-    double dx = robot_trans[X] - robot_trans0[X];
-    double dz = robot_trans[Z] - robot_trans0[Z];
-    double dist = sqrt(dx * dx + dz * dz); //euclidian distance x5
-    //printf("distance %f\n", dist);
-    double self_rot = abs(w[0] - w[1]); //rotation around itself x -5 
+    memcpy(dist, data_received + NUM_SENSORS + NUM_WHEELS, sizeof(double));
+    //const double *robot_trans = wb_supervisor_field_get_sf_vec3f(robot_translation);
+    //double dx = robot_trans[X] - robot_trans0[X];
+    //double dz = robot_trans[Z] - robot_trans0[Z];
+    //double dist = sqrt(dx * dx + dz * dz); //euclidian distance x5
+    //double self_rot = abs(w[0] - w[1]); //rotation around itself x -5 
     //printf("L wheel speed %f\n", w[0]);
     //printf("R wheel speed %f\n", w[1]);
     int i,j;
@@ -114,7 +110,7 @@ double measure_fitness() {
         sum_sensor_values += s[i];
         //printf("Distance sensor %f\n", s[i]);
      }
-     
+
      for (j=8; j<NUM_SENSORS; j++){
      //printf("cliff no: %f\n",s[j]);
        if (s[j] < -10){
@@ -123,11 +119,12 @@ double measure_fitness() {
          cliff= 1;
        }
      }
-     printf("Distance sensor %f\n", sum_sensor_values);
-     //printf("dist: %f\n", dist);
-     //printf("ds: %f\n", 5*(1 / sum_sensor_values));
-    fitness = (5*dist + (1 / 100*sum_sensor_values) )*cliff;
 
+     //printf("sensor %f\n", sum_sensor_values);
+     //printf("dist: %f\n", dist[0]);
+     //printf("ds: %f\n", 5*(1 / sum_sensor_values));
+    //fitness = (dist[0] - sum_sensor_values )*cliff;
+    fitness = abs(dist[0]) * (100/sum_sensor_values) * cliff;
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
@@ -137,20 +134,21 @@ double measure_fitness() {
 
 // evaluate one genotype at a time
 void evaluate_genotype(Genotype genotype) {
-  
+
   // send genotype to robot for evaluation
   wb_emitter_send(emitter, genotype_get_genes(genotype), GENOTYPE_SIZE * sizeof(double));
   
   // reset robot position
-  printf("Y axis: %f\n", robot_trans0[1]);
-  if (robot_trans0[1] != 0.0)
-    robot_trans0[1] = 0.0;
+  //printf("Y axis: %f\n", robot_trans0[1]);
+  //if (robot_trans0[1] != 0.0)
+  //  robot_trans0[1] = 0.0;
+  
   wb_supervisor_field_set_sf_vec3f(robot_translation, robot_trans0);
   wb_supervisor_field_set_sf_rotation(robot_rotation, robot_rot0);
   // wb_supervisor_field_set_sf_vec3f(load_translation, load_trans0);
 
   // evaluation genotype during one minute
-  run_seconds(300.0);
+  run_seconds(600.0);
   
   // measure fitness
   double fitness = measure_fitness();

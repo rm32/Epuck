@@ -169,7 +169,7 @@ DEF wall Solid {
   }
 }
 DEF ROBOT E-puck {
-  translation 0.0896639 0.002 -0.380656
+  translation 0.0826778 0.002 -0.325844
   rotation -0.03464 0.984878 -0.169752 0.0171878
   controller "advanced_genetic_algorithm"
   emitter_channel 2
@@ -177,5 +177,4 @@ DEF ROBOT E-puck {
     E-puckGroundSensors {
     }
   ]
-  kinematic TRUE
 }
