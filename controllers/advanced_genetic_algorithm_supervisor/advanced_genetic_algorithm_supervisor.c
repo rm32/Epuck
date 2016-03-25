@@ -14,21 +14,20 @@
 #include <webots/differential_wheels.h>
 #include <stdlib.h>
 
-static const int POPULATION_SIZE = 50;
-static const int NUM_GENERATIONS = 10;
+static const int POPULATION_SIZE = 20;
+static const int NUM_GENERATIONS = 40;
 static const char *FILE_NAME = "fittest.txt";
 
 // must match the values in the advanced_genetic_algorithm.c code
-#define NUM_SENSORS 10
+#define NUM_SENSORS 11
 #define NUM_WHEELS 2
+#define NUM_GROUND_SENSORS 3
 #define GENOTYPE_SIZE ((NUM_SENSORS * NUM_WHEELS) + 4)
-
-// index access
-enum { X, Y, Z };
 
 static int time_step;
 static WbDeviceTag emitter;   // to send genes to robot
 static WbDeviceTag receiver;  //to receive the sensor values from the robot controller
+
 static WbDeviceTag display;   // to display the fitness evolution
 static int display_width, display_height;
 
@@ -40,15 +39,19 @@ static WbFieldRef robot_translation;
 static WbFieldRef robot_rotation;
 static double robot_trans0[3];  // a translation needs 3 doubles
 static double robot_rot0[4];    // a rotation needs 4 doubles
-  
-// for reading or setting the load's position
-// static WbFieldRef load_translation;
-// static double load_trans0[3];
-  
-// start with a demo until the user presses the 'O' key
-// (change this if you want)
-static bool demo = true;
 
+bool demo = false;
+
+// run the robot simulation for the specified number of seconds
+void run_seconds(double seconds) {
+    int i, n = 1000.0 * seconds / time_step;
+    for (i = 0; i < n; i++) {
+        wb_robot_step(time_step);
+    }
+}
+
+
+// ------- METHOD USED FOR GRAPH OF FITNESS OVER GENERATIONS -------
 void draw_scaled_line(int generation, double y1, double y2) {
   const double XSCALE = (double)display_width / NUM_GENERATIONS;
   const double YSCALE = 10.0;
@@ -60,10 +63,14 @@ void draw_scaled_line(int generation, double y1, double y2) {
 void plot_fitness(int generation, double best_fitness, double average_fitness) {
   static double prev_best_fitness = 0.0;
   static double prev_average_fitness = 0.0;
+  printf("DRAW %i\n" , generation);
   if (generation > 0) {  
+  
     wb_display_set_color(display, 0xff0000); // red
     draw_scaled_line(generation, prev_best_fitness, best_fitness);
 
+    printf("fitness %f  and %f", prev_best_fitness, best_fitness);
+    
     wb_display_set_color(display, 0x00ff00); // green
     draw_scaled_line(generation, prev_average_fitness, average_fitness);
   }
@@ -71,60 +78,51 @@ void plot_fitness(int generation, double best_fitness, double average_fitness) {
   prev_best_fitness = best_fitness;
   prev_average_fitness = average_fitness;
 }
- 
-// run the robot simulation for the specified number of seconds
-void run_seconds(double seconds) {
-  int i, n = 1000.0 * seconds / time_step;
-  for (i = 0; i < n; i++) {
-    wb_robot_step(time_step);
-  }
-}
+
+//--------------------------
+
+
 
 // compute fitness
 double measure_fitness() {
 
+  // sensors, wheels  and encoder
   double data_received[NUM_SENSORS + NUM_WHEELS + 1];
+
   double s[NUM_SENSORS * sizeof(double)];
   double w[NUM_WHEELS * sizeof(double)];
-  double fitness;
+  double fitness = 0; 
+   
+  // array so can copy with memcpy
   double dist[1];
-  //printf("receiver: %d\n", wb_receiver_get_queue_length(receiver));
-  if (wb_receiver_get_queue_length(receiver) > 0) {
+
+   if (wb_receiver_get_queue_length(receiver) > 0) {
 
     memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
     
     memcpy(s, data_received, NUM_SENSORS * sizeof(double));
     memcpy(w, data_received + NUM_SENSORS, NUM_WHEELS * sizeof(double));
     memcpy(dist, data_received + NUM_SENSORS + NUM_WHEELS, sizeof(double));
-    //const double *robot_trans = wb_supervisor_field_get_sf_vec3f(robot_translation);
-    //double dx = robot_trans[X] - robot_trans0[X];
-    //double dz = robot_trans[Z] - robot_trans0[Z];
-    //double dist = sqrt(dx * dx + dz * dz); //euclidian distance x5
-    //double self_rot = abs(w[0] - w[1]); //rotation around itself x -5 
-    //printf("L wheel speed %f\n", w[0]);
-    //printf("R wheel speed %f\n", w[1]);
-    int i,j;
-     double cliff;
-     double sum_sensor_values = 0.0;
-     for (i = 0; i < NUM_SENSORS-2; i++){
+
+    printf("distance %f \n" , dist[0] );
+    
+    
+    double cliff = 1;
+    double sum_sensor_values = 0.0;
+ 
+     for (int i = 0; i < NUM_SENSORS- NUM_GROUND_SENSORS; i++){
         sum_sensor_values += s[i];
-        //printf("Distance sensor %f\n", s[i]);
      }
 
-     for (j=8; j<NUM_SENSORS; j++){
-     //printf("cliff no: %f\n",s[j]);
+     for (int j=8; j<NUM_SENSORS; j++){
        if (s[j] < -10){
          cliff= 0;
-       }else{
-         cliff= 1;
        }
      }
 
-     //printf("sensor %f\n", sum_sensor_values);
-     //printf("dist: %f\n", dist[0]);
-     //printf("ds: %f\n", 5*(1 / sum_sensor_values));
-    //fitness = (dist[0] - sum_sensor_values )*cliff;
-    fitness = abs(dist[0]) * (100/sum_sensor_values) * cliff;
+       // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
+    fitness = fabs(dist[0]) * (100/sum_sensor_values) * cliff;
+      
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
@@ -132,23 +130,18 @@ double measure_fitness() {
   return fitness;
 }
 
+
 // evaluate one genotype at a time
 void evaluate_genotype(Genotype genotype) {
 
   // send genotype to robot for evaluation
   wb_emitter_send(emitter, genotype_get_genes(genotype), GENOTYPE_SIZE * sizeof(double));
   
-  // reset robot position
-  //printf("Y axis: %f\n", robot_trans0[1]);
-  //if (robot_trans0[1] != 0.0)
-  //  robot_trans0[1] = 0.0;
-  
   wb_supervisor_field_set_sf_vec3f(robot_translation, robot_trans0);
   wb_supervisor_field_set_sf_rotation(robot_rotation, robot_rot0);
-  // wb_supervisor_field_set_sf_vec3f(load_translation, load_trans0);
 
   // evaluation genotype during one minute
-  run_seconds(600.0);
+  run_seconds(120.0);
   
   // measure fitness
   double fitness = measure_fitness();
@@ -157,16 +150,15 @@ void evaluate_genotype(Genotype genotype) {
   printf("fitness: %g\n", fitness);
 }
 
+
 void run_optimization() {
   wb_robot_keyboard_disable();
-
   printf("---\n");
   printf("starting GA optimization ...\n");
   printf("population size is %d, genome size is %d\n", POPULATION_SIZE, GENOTYPE_SIZE);
 
-  int i, j;
-  for  (i = 0; i < NUM_GENERATIONS; i++) {    
-    for (j = 0; j < POPULATION_SIZE; j++) {
+  for  (int i = 0; i < NUM_GENERATIONS; i++) {
+    for (int j = 0; j < POPULATION_SIZE; j++) {
       printf("generation: %d, genotype: %d\n", i, j);
 
       // evaluate genotype
@@ -202,7 +194,9 @@ void run_optimization() {
   
   population_destroy(population);
 }
-  
+
+
+
 // show demo of the fittest individual
 void run_demo() {
   wb_robot_keyboard_enable(time_step);
@@ -225,6 +219,9 @@ void run_demo() {
   while (demo)
     evaluate_genotype(genotype);
 }
+
+
+
 
 int main(int argc, const char *argv[]) {
   
@@ -256,13 +253,10 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
-  // find load node and store initial position
-  // WbNodeRef load = wb_supervisor_node_get_from_def("LOAD");
-  // load_translation = wb_supervisor_node_get_field(load, "translation");
-  // memcpy(load_trans0, wb_supervisor_field_get_sf_vec3f(load_translation), sizeof(load_trans0));
-  
   if (demo)
+  {
     run_demo();
+  }
 
   // run GA optimization
   run_optimization();

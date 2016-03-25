@@ -12,26 +12,29 @@
 
 #define NUM_SENSORS 10
 #define NUM_WHEELS 2
-#define GENOTYPE_SIZE 70 //((HIDDEN * (NUM_SENSORS + 2)) + (NUM_WHEELS * HIDDEN))
+#define GENOTYPE_SIZE ((NUM_SENSORS * NUM_WHEELS) + 4)
 #define RANGE (1024/2)
-#define HIDDEN 10
+#define ASDF 1
+
 
 // sensor to wheels multiplication matrix
 // each each sensor has a weight for each wheel
 double matrix[NUM_SENSORS + 2][NUM_WHEELS]; 
 double ctx[NUM_WHEELS];
-int time_step;
+int time_step, gg, tt;
 int emitter_counter, steps;
 double sensor_values[NUM_SENSORS];
 double mean_sensor_values[NUM_SENSORS - 2];
+
+//wheel encoder variables
+double left, right, ctx_left, ctx_right, encoder_change[1];
+
 // read sensor values
 double* data_emitted;
+
 //output neurons:
 double wheel_speed[NUM_WHEELS] = { 0.0, 0.0 };
-double mean_wheel_speed[NUM_WHEELS];
-
-double matrix2[GENOTYPE_SIZE];
-double hiddenAct[HIDDEN];
+double mean_wheel_speed[NUM_WHEELS +1]; ///////////////////////////////////////////////////// +1 for encoder
 
 WbDeviceTag sensors[NUM_SENSORS];  // proximity sensors
 WbDeviceTag receiver;              // for receiving genes from Supervisor
@@ -52,11 +55,26 @@ double sigmoid(double x)
      return return_value;
 }
 
+//sort values
+void sort_values(double values[], int size){
+  double temp;
+  int i,j;
+  
+  for (i = 0; i < size; i++){
+    for (j = i + 1; j < size; j++){
+      if (values[i] < values[j]){
+        temp = values[i];
+        values[i] = values[j];
+        values[j] = temp;
+      }
+    }
+  }
+}
+
 
 // check if a new set of genes was sent by the Supervisor
 // in this case start using these new genes immediately
 void check_for_new_genes() {
-printf("here 1");
   if (wb_receiver_get_queue_length(receiver) > 0) {
     // check that the number of genes received match what is expected
     assert(wb_receiver_get_data_size(receiver) == GENOTYPE_SIZE * sizeof(double));
@@ -64,15 +82,13 @@ printf("here 1");
     // copy new genes directly in the sensor/actuator matrix
     // we don't use any specific mapping nor left/right symmetry
     // it's the GA's responsability to find a functional mapping
-    memcpy(matrix2, wb_receiver_get_data(receiver), GENOTYPE_SIZE * sizeof(double));
-    for (i=0;i<GENOTYPE_SIZE;i++){
-      printf("matrix %f, ", matrix2[i]);
-    }
+    memcpy(matrix, wb_receiver_get_data(receiver), GENOTYPE_SIZE * sizeof(double));
 
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
 }
+
 
 static double clip_value(double value, double min_max) {
   if (value > min_max)
@@ -83,68 +99,56 @@ static double clip_value(double value, double min_max) {
   return value;
 }
 
+
 void sense_compute_and_actuate() {
-  printf("aaaaaaaaaaaaaaaaaa");
-  int i, j, k;
+
+left = wb_differential_wheels_get_left_encoder();
+right = wb_differential_wheels_get_right_encoder();
+    
+//printf("left encoder: %f ",left);
+//printf("ctx encoder: %f\n",ctx_left);
+//if (left != 0)
+  mean_wheel_speed[2] += 1.0*(left - ctx_left) + 1.0*(right - ctx_right); //calculate the change
+//printf(" change: %f\n",mean_wheel_speed[2]);
+ctx_left = left;
+ctx_right = right;
+
+
+  int i, j;
   for (i = 0; i < NUM_SENSORS - 2; i++){
     //get the sumed value of each sensor so we can calculate the mean value before sending them back
     mean_sensor_values[i] += wb_distance_sensor_get_value(sensors[i]);
     sensor_values[i] = wb_distance_sensor_get_value(sensors[i]);
-    printf("sensor %d %f\n", i, sensor_values[i]);  
+    //printf("sensor %d %f\n", i, sensor_values[i]);  
   }
   for (i = 8; i < NUM_SENSORS; i++){
      
     if (wb_distance_sensor_get_value(sensors[i]) > 800){
-    printf("sensor %d %f\n", i, wb_distance_sensor_get_value(sensors[i])); 
+    //printf("ground %d %f\n", i, wb_distance_sensor_get_value(sensors[i])); 
       sensor_values[i] += -1.0;
     }else{
       sensor_values[i] += 0.0;
     }
   }
   
-  int ofs = 0;
+  
   double sum = 0.0;
-  // for (i = 0; i < NUM_WHEELS; i++){
-  //   wheel_speed[i] =  0.0;
-  //   for (j = 0; j < NUM_SENSORS; j++){
-  //   	sum += matrix[j][i] * (1.0 - (sensor_values[j] / RANGE));
-  //   }
-
-  //   //add the recurrent connections on the output layer from the previous time step
-  //   sum += matrix[NUM_SENSORS][i] * (1.0 - (ctx[i] / RANGE));
-  //   sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (ctx[(i + 1)%2] / RANGE));
-  //   //sum += matrix[NUM_SENSORS][i] * ctx[i];
-  //   //sum += matrix[NUM_SENSORS + 1][i] * ctx[(i + 1)%2];
-
-  //   //apply the activation function to the weighted inputs
-  //   wheel_speed[i] = 500 + 1000*tanh(sum);
-  // }  
-
   for (i = 0; i < NUM_WHEELS; i++){
     wheel_speed[i] =  0.0;
-    for (j = 0; j < HIDDEN; j++){
-      for (k = 0; k < NUM_SENSORS; k++){
-        sum += matrix2[ofs] * (1.0 - (sensor_values[j] / RANGE)); //TODO: recenter the sensor value 
-        ofs++;
-      }
-      sum += matrix2[ofs] * (1.0 - (ctx[i] / RANGE));
-      ofs++;
-      sum += matrix2[ofs] * (1.0 - (ctx[(i + 1)%2] / RANGE));
-      ofs++;
-
-      hiddenAct[j] = tanh(sum);
-      sum = 0.0;
-    }
-    for (j = 0; j < HIDDEN; j++){
-      sum += matrix2[ofs] * hiddenAct[j];
-      ofs++;
+    for (j = 0; j < NUM_SENSORS; j++){
+    	sum += matrix[j][i] * (1.0 - (sensor_values[j] / RANGE));
     }
 
+    //add the recurrent connections on the output layer from the previous time step
+    sum += matrix[NUM_SENSORS][i] * (1.0 - (ctx[i] / RANGE));
+    sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (ctx[(i + 1)%2] / RANGE));
+    //sum += matrix[NUM_SENSORS][i] * ctx[i];
+    //sum += matrix[NUM_SENSORS + 1][i] * ctx[(i + 1)%2];
+
+    //apply the activation function to the weighted inputs
     wheel_speed[i] = tanh(sum);
-    printf("wheel %d %f\n",i,wheel_speed[i] );
-    ctx[i] = wheel_speed[i];
-  }
-
+    sum = 0.0;
+  }  
 
   // clip to e-puck max speed values to avoid warning
   wheel_speed[0] = clip_value(wheel_speed[0], 1000.0);
@@ -157,7 +161,7 @@ void sense_compute_and_actuate() {
   mean_wheel_speed[1] += wheel_speed[1];
 
   // actuate e-puck wheels
-  wb_differential_wheels_set_speed(500*wheel_speed[0], 500*wheel_speed[1]);
+  wb_differential_wheels_set_speed(200*wheel_speed[0], 200*wheel_speed[1]);
 
   //save current speeds to be used as previous speed on next run
   ctx[0] = wheel_speed[0];
@@ -171,13 +175,14 @@ int main(int argc, const char *argv[]) {
 
   // find simulation step in milliseconds (WorldInfo.basicTimeStep)
   time_step = wb_robot_get_basic_time_step();
-  printf("time step: %d\n",time_step);
+  //printf("time step: %d\n",time_step);
     
   //initialize the emitter counter to send data back to the supervisor  
-  emitter_counter = 60000/time_step;
-printf("size: %d\n",GENOTYPE_SIZE);
+  emitter_counter = 120000/time_step;
+
   //copy emitter counter to a variable to use the initial value later
   steps = emitter_counter;
+
 
   // find and enable proximity sensors
   char name[32];
@@ -207,17 +212,26 @@ printf("size: %d\n",GENOTYPE_SIZE);
   // wheels will initially be stopped
   memset(matrix, 0.0, sizeof(matrix));
   
+  //enable the encoders to measure distance traveled
+  wb_differential_wheels_enable_encoders(time_step);
+  
+  //load_best();
   // run until simulation is restarted
   while (wb_robot_step(time_step) != -1) {
-  printf("main_");
+  
     check_for_new_genes();
     sense_compute_and_actuate();
     
     emitter_counter--;
-    printf("step: %d\n", emitter_counter);
+    //printf("step: %d\n", emitter_counter);
     
     if (emitter_counter == 0){
-      data_emitted = malloc((NUM_SENSORS + NUM_WHEELS) * sizeof(double));
+
+      //reset the wheel encoders and sum
+      wb_differential_wheels_set_encoders(0.0, 0.0);
+      encoder_change[0] = 0.0;
+
+      data_emitted = malloc((NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
 
       //calculate the mean value of each wheel
       mean_wheel_speed[0] = mean_wheel_speed[0]/steps;
@@ -225,20 +239,26 @@ printf("size: %d\n",GENOTYPE_SIZE);
 
       //calculate the mean value of each sensor
       for (i=0; i< NUM_SENSORS-2; i++){
-        sensor_values[i] = sensor_values[i]/steps;
-        sensor_values[i]  /= 4096; //normalize the sensor values
+        mean_sensor_values[i] = sensor_values[i]/steps;
+        mean_sensor_values[i]  /= 4096; //normalize the sensor values
         //printf("sensor %d value: %f\n",i,sensor_values[i]);
       }
       //printf("sensor %d value: %f\n",8,sensor_values[8]);
       //printf("sensor %d value: %f\n",9,sensor_values[9]);
-      memcpy(data_emitted, sensor_values, NUM_SENSORS * sizeof(double));
+      
+      //sort mean sensor values in descending order.
+      //sort_values(mean_sensor_values, NUM_SENSORS - 2);
 
-      //Append wheel speed to data_emitter
-      memcpy(data_emitted + NUM_SENSORS, mean_wheel_speed, NUM_WHEELS * sizeof(double));
-      //printf("data emitted: %f\n",data_emitted);
+      memcpy(data_emitted, sensor_values, NUM_SENSORS * sizeof(double));
+      
+      //Append wheel speed (and encoder) to data_emitter
+      memcpy(data_emitted + NUM_SENSORS, mean_wheel_speed, (NUM_WHEELS + 1) * sizeof(double));
+      
+      //Append the wheel encoder change to data_emitter
+      //memcpy(data_emitted + NUM_SENSORS + NUM_WHEELS, encoder_change, 1*sizeof(double));
       
       // send data to supervisor for evaluation and reset the counter
-      wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS) * sizeof(double));
+      wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
       emitter_counter = steps;
       
       for (i = 0; i < NUM_SENSORS; i++){

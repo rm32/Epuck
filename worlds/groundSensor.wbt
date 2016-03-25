@@ -6,8 +6,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation 0.947192 0.296765 0.121482 5.46724
-  position -0.347479 1.16701 1.1977
+  orientation 0.848277 0.46635 0.250885 5.15277
+  position -0.633789 1.54285 0.613143
 }
 Background {
   skyColor [
@@ -46,7 +46,7 @@ DEF floor Solid {
         }
         texture ImageTexture {
           url [
-            "/media/giannis/Data/Heriot Watt/Semester 2/Intelligent Robotics/Assignment 2/RatWorld/THICK.png"
+            "THICK.png"
           ]
         }
       }
@@ -169,7 +169,7 @@ DEF wall Solid {
   }
 }
 DEF ROBOT E-puck {
-  translation 0.0896639 0.002 -0.380656
+  translation 0.0779612 0.002 0.445992
   rotation -0.03464 0.984878 -0.169752 0.0171878
   controller "advanced_genetic_algorithm"
   emitter_channel 2
@@ -177,5 +177,4 @@ DEF ROBOT E-puck {
     E-puckGroundSensors {
     }
   ]
-  kinematic TRUE
 }
