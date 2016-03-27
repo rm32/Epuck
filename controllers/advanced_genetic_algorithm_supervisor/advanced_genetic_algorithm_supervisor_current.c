@@ -14,19 +14,16 @@
 #include <webots/differential_wheels.h>
 #include <stdlib.h>
 
-#define NUM_GROUND_SENSORS 3
-#define NUM_TOP_SENSORS 8
-#define NUM_SENSORS (NUM_GROUND_SENSORS + NUM_TOP_SENSORS)
-#define NUM_WHEELS 2
-#define HIDDEN 4
-#define GENOTYPE_SIZE ((HIDDEN*INPUT) +(HIDDEN*OUTPUT))
-#define INPUT (NUM_SENSORS +2)
-#define OUTPUT NUM_WHEELS
-#define time 120
-
-static const int POPULATION_SIZE = 10;
-static const int NUM_GENERATIONS = 50;
+static const int POPULATION_SIZE = 20;
+static const int NUM_GENERATIONS = 40;
 static const char *FILE_NAME = "fittest.txt";
+
+// must match the values in the advanced_genetic_algorithm.c code
+#define NUM_SENSORS 11
+#define NUM_WHEELS 2
+#define NUM_GROUND_SENSORS 3
+#define GENOTYPE_SIZE ((NUM_SENSORS * NUM_WHEELS) + 4)
+#define time 480
 
 static int time_step;
 static WbDeviceTag emitter;   // to send genes to robot
@@ -43,6 +40,8 @@ static WbFieldRef robot_translation;
 static WbFieldRef robot_rotation;
 static double robot_trans0[3];  // a translation needs 3 doubles
 static double robot_rot0[4];    // a rotation needs 4 doubles
+
+bool demo = false;
 
 // run the robot simulation for the specified number of seconds
 void run_seconds(double seconds) {
@@ -110,7 +109,6 @@ double measure_fitness() {
     
     
     double cliff = 1;
-    
     double sum_sensor_values = 0.0;
  
      for (int i = 0; i < NUM_SENSORS- NUM_GROUND_SENSORS; i++){
@@ -122,8 +120,8 @@ double measure_fitness() {
          cliff= 0;
        }
      }
-     
-    // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
+
+       // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
     fitness = fabs(dist[0]) * cliff ; //* (100/sum_sensor_values) * cliff;
       
     // prepare for receiving next genes packet
@@ -218,7 +216,9 @@ void run_demo() {
   Genotype genotype = genotype_create();
   genotype_fread(genotype, infile);
   fclose(infile);
- 
+  
+  while (demo)
+    evaluate_genotype(genotype);
 }
 
 
@@ -254,6 +254,10 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
+  if (demo)
+  {
+    run_demo();
+  }
 
   // run GA optimization
   run_optimization();
