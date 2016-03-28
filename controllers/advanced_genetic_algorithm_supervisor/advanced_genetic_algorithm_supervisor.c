@@ -148,7 +148,7 @@ void evaluate_genotype(Genotype genotype) {
   double fitness = measure_fitness();
   genotype_set_fitness(genotype, fitness);
 
- // printf("fitness: %g\n", fitness);
+  printf("fitness: %g\n", fitness);
 }
 
 
