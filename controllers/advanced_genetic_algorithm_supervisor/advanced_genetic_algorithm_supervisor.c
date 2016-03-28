@@ -97,7 +97,7 @@ double measure_fitness() {
   double fitness = 0; 
    
   // array so can copy with memcpy
-  double dist[1];
+  double dist[1] = {0.0};
    if (wb_receiver_get_queue_length(receiver) > 0) {
 
     memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
@@ -121,8 +121,10 @@ double measure_fitness() {
        }
      }
      
+     
+     
     // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
-      fitness = (fabs(dist[0]) * 1/sum_sensor_values) * cliff ;
+      fitness = fabs(dist[0]) * 1/sum_sensor_values * cliff ;
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
