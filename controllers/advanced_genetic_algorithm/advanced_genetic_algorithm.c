@@ -215,8 +215,8 @@ static void compute_odometry() {
   wb_differential_wheels_enable_encoders(time_step);
   double l= encoderTest[0] ;// wb_differential_wheels_get_left_encoder();
   double r = encoderTest[1]; //wb_differential_wheels_get_right_encoder(); 
-  left = l*100 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by left wheel in meter
-  right = r*100 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by right wheel in meter
+  left = l*10000 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by left wheel in meter
+  right = r*10000 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by right wheel in meter
 }
 
 

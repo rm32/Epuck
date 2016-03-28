@@ -22,7 +22,7 @@
 #define GENOTYPE_SIZE ((HIDDEN*INPUT) +(HIDDEN*OUTPUT))
 #define INPUT (NUM_SENSORS +2)
 #define OUTPUT NUM_WHEELS
-#define time 300
+#define time 120
 
 static const int POPULATION_SIZE = 50;
 static const int NUM_GENERATIONS = 10;
@@ -38,13 +38,13 @@ static int display_width, display_height;
 // the GA population
 static Population population;
 
+bool demo = false; 
+
 // for reading or setting the robot's position and orientation
 static WbFieldRef robot_translation;
 static WbFieldRef robot_rotation;
 static double robot_trans0[3];  // a translation needs 3 doubles
 static double robot_rot0[4];    // a rotation needs 4 doubles
-
-bool demo = true;
 
 // run the robot simulation for the specified number of seconds
 void run_seconds(double seconds) {
@@ -99,7 +99,7 @@ double measure_fitness() {
   double fitness = 0; 
    
   // array so can copy with memcpy
-  double dist[1];
+  double dist[1] = {0.0};
    if (wb_receiver_get_queue_length(receiver) > 0) {
 
     memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
@@ -123,8 +123,10 @@ double measure_fitness() {
        }
      }
      
+     
+     
     // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
-      fitness = (fabs(dist[0]) * 1/sum_sensor_values) * cliff ;
+      fitness = fabs(dist[0]) * 1/sum_sensor_values * cliff ;
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
@@ -257,9 +259,10 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
+
   if (demo)
     run_demo();
-  
+
   // run GA optimization
   run_optimization();
   

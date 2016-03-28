@@ -7,5 +7,10 @@ maximizedDockId: -1
 centralWidgetVisible: 1
 orthographicViewHeight: 1
 textFiles: 1 "controllers/advanced_genetic_algorithm_supervisor/advanced_genetic_algorithm_supervisor.c" "controllers/advanced_genetic_algorithm/advanced_genetic_algorithm.c"
+<<<<<<< HEAD
 renderingDevicePerspectives: 8;1;0.72;0.0954839;0.0597015
 renderingDevicePerspectives: 303;1;1;0.0348387;0.030597
+=======
+renderingDevicePerspectives: 8;1;0.72;0.759494;0.442935
+renderingDevicePerspectives: 303;1;1;0.0683544;0.0557065
+>>>>>>> bf738388ec0d26b17f389743439dc4336a656942
