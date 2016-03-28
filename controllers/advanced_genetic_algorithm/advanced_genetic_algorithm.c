@@ -170,7 +170,7 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
     sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (ctx[(i + 1)%2] / RANGE));
 
     //apply the activation function to the weighted inputs
-    hidden[i] = tanh(sum);
+    hidden[i] = sigmoid(sum);
   }
   
   
@@ -183,7 +183,6 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
     for (int j = 0; j < HIDDEN; j++){
         double weight = matrix2[j][i];
         double input = hidden[j];
- //        printf("input is %f weight is %f \n" , input, weight);
          
       sum += weight *input;
     }
@@ -214,12 +213,11 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
 
 static void compute_odometry() {
   wb_differential_wheels_enable_encoders(time_step);
-  double l = encoderTest[0]; //wb_differential_wheels_get_left_encoder();
+  double l= encoderTest[0] ;// wb_differential_wheels_get_left_encoder();
   double r = encoderTest[1]; //wb_differential_wheels_get_right_encoder(); 
-  left = l / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by left wheel in meter
-  right = r / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by right wheel in meter
+  left = l*100 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by left wheel in meter
+  right = r*100 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by right wheel in meter
 }
-
 
 
 int main(int argc, const char *argv[]) {
@@ -283,19 +281,19 @@ int main(int argc, const char *argv[]) {
       compute_odometry();
 
      data_emitted = malloc((NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
-
-      mean_wheel_speed[2] = fabs(left + right); //calculate the change
+      
+      mean_wheel_speed[2] = fabs(left + right)/2; //calculate the change
 
       if(mean_wheel_speed[2] < 0)
       {
         mean_wheel_speed[2] = 0; 
       }
   
-      
       memcpy(data_emitted, sensor_values, NUM_SENSORS * sizeof(double));
       
       //Append wheel speed (and encoder) to data_emitter
       memcpy(data_emitted + NUM_SENSORS, mean_wheel_speed, (NUM_WHEELS + 1) * sizeof(double));
+      
       
       // send data to supervisor for evaluation and reset the counter
       wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));

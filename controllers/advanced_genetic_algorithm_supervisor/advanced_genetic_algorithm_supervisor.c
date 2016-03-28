@@ -24,8 +24,8 @@
 #define OUTPUT NUM_WHEELS
 #define time 120
 
-static const int POPULATION_SIZE = 10;
-static const int NUM_GENERATIONS = 50;
+static const int POPULATION_SIZE = 50;
+static const int NUM_GENERATIONS = 10;
 static const char *FILE_NAME = "fittest.txt";
 
 static int time_step;
@@ -57,7 +57,7 @@ void run_seconds(double seconds) {
 // ------- METHOD USED FOR GRAPH OF FITNESS OVER GENERATIONS -------
 void draw_scaled_line(int generation, double y1, double y2) {
   const double XSCALE = (double)display_width / NUM_GENERATIONS;
-  const double YSCALE = 60.0; //10.0;
+  const double YSCALE = 0.1; //10.0;
   
   wb_display_draw_line(display, (generation - 0.5) * XSCALE, display_height - y1 * YSCALE,
    (generation + 0.5) * XSCALE, display_height - y2 * YSCALE);
@@ -105,8 +105,6 @@ double measure_fitness() {
     memcpy(s, data_received, NUM_SENSORS * sizeof(double));
     memcpy(w, data_received + NUM_SENSORS, NUM_WHEELS * sizeof(double));
     memcpy(dist, data_received + NUM_SENSORS + NUM_WHEELS, sizeof(double));
-
-    printf("distance %f \n" , dist[0] );
     
     
     double cliff = 1;
@@ -119,13 +117,12 @@ double measure_fitness() {
 
      for (int j=8; j<NUM_SENSORS; j++){
        if ((s[j] < -10) && (cliff > 0)){
-         cliff= 0;
+         cliff= 0.3;
        }
      }
      
     // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
-    fitness = fabs(dist[0]) * cliff ; //* (100/sum_sensor_values) * cliff;
-      
+      fitness = (fabs(dist[0]) ) * cliff ;
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
@@ -139,6 +136,7 @@ void evaluate_genotype(Genotype genotype) {
 
   // send genotype to robot for evaluation
   wb_emitter_send(emitter, genotype_get_genes(genotype), GENOTYPE_SIZE * sizeof(double));
+  robot_trans0[1] = 0;
   
   wb_supervisor_field_set_sf_vec3f(robot_translation, robot_trans0);
   wb_supervisor_field_set_sf_rotation(robot_rotation, robot_rot0);
@@ -150,7 +148,7 @@ void evaluate_genotype(Genotype genotype) {
   double fitness = measure_fitness();
   genotype_set_fitness(genotype, fitness);
 
-  printf("fitness: %g\n", fitness);
+ // printf("fitness: %g\n", fitness);
 }
 
 
@@ -253,7 +251,6 @@ int main(int argc, const char *argv[]) {
   robot_rotation = wb_supervisor_node_get_field(robot, "rotation");
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
-
 
   // run GA optimization
   run_optimization();
