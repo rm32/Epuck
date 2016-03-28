@@ -117,12 +117,12 @@ double measure_fitness() {
 
      for (int j=8; j<NUM_SENSORS; j++){
        if ((s[j] < -10) && (cliff > 0)){
-         cliff= 0.3;
+         cliff= 0.0;
        }
      }
      
     // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
-      fitness = (fabs(dist[0]) ) * cliff ;
+      fitness = (fabs(dist[0]) * 1/sum_sensor_values) * cliff ;
     // prepare for receiving next genes packet
     wb_receiver_next_packet(receiver);
   }
