@@ -38,6 +38,8 @@ static int display_width, display_height;
 // the GA population
 static Population population;
 
+bool demo = false; 
+
 // for reading or setting the robot's position and orientation
 static WbFieldRef robot_translation;
 static WbFieldRef robot_rotation;
@@ -254,6 +256,11 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
+
+  if(demo)
+  {
+    run_demo();
+  }
   // run GA optimization
   run_optimization();
   
