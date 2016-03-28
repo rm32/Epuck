@@ -22,7 +22,7 @@
 #define GENOTYPE_SIZE ((HIDDEN*INPUT) +(HIDDEN*OUTPUT))
 #define INPUT (NUM_SENSORS +2)
 #define OUTPUT NUM_WHEELS
-#define time 120
+#define time 300
 
 static const int POPULATION_SIZE = 50;
 static const int NUM_GENERATIONS = 10;
@@ -43,6 +43,8 @@ static WbFieldRef robot_translation;
 static WbFieldRef robot_rotation;
 static double robot_trans0[3];  // a translation needs 3 doubles
 static double robot_rot0[4];    // a rotation needs 4 doubles
+
+bool demo = true;
 
 // run the robot simulation for the specified number of seconds
 void run_seconds(double seconds) {
@@ -148,7 +150,7 @@ void evaluate_genotype(Genotype genotype) {
   double fitness = measure_fitness();
   genotype_set_fitness(genotype, fitness);
 
- // printf("fitness: %g\n", fitness);
+  printf("fitness: %g\n", fitness);
 }
 
 
@@ -216,6 +218,9 @@ void run_demo() {
   Genotype genotype = genotype_create();
   genotype_fread(genotype, infile);
   fclose(infile);
+  
+  while (demo)
+    evaluate_genotype(genotype);
  
 }
 
@@ -252,6 +257,9 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
+  if (demo)
+    run_demo();
+  
   // run GA optimization
   run_optimization();
   
