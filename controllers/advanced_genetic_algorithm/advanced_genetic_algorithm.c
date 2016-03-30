@@ -54,7 +54,7 @@ WbDeviceTag receiver;              // for receiving genes from Supervisor
 WbDeviceTag emitter;                // for sending the fitness value to the supervisor
 WbDeviceTag accelerometer; 
 
-double fitness[4] = {0,0,0,0}; 
+double fitness[5] = {0,0,0,0,0}; 
 
 
 // check if a new set of genes was sent by the Supervisor
@@ -95,6 +95,8 @@ static double clip_value(double value, double min_max) {
 
 double old_left = 0; 
 double old_right = 0; 
+double ctx_leftSpeed = 0;
+double ctx_rightSpeed = 0;
 
 void sense_compute_and_actuate() {
 
@@ -104,6 +106,7 @@ void sense_compute_and_actuate() {
   
   double leftSpeed =  wb_differential_wheels_get_left_speed(); 
   double rightSpeed = wb_differential_wheels_get_right_speed();
+  
   
 double sum = 0; 
 for (int i = 0; i < NUM_SENSORS - NUM_GROUND_SENSORS; i++){
@@ -126,22 +129,28 @@ for (int i = (NUM_SENSORS - NUM_GROUND_SENSORS); i < NUM_SENSORS; i++){
     fitness[1]++;
   }
   
- 
-  
   if((leftSpeed < 0) || (rightSpeed < 0) )
   {
     fitness[2]++;
   }
   
-  
   if(( left > old_left+3) || ( right > old_right+3) )
   {
     fitness[3]++;
   }
+  
+  if( (fabs(leftSpeed - rightSpeed) > 40) && (fabs(ctx_leftSpeed - ctx_rightSpeed) > 40) ){
+    fitness[4]++;
+  }else{
+    fitness[4]--;
+    
+  }
+
   old_left = left; 
   old_right = right;  
 
-
+  ctx_leftSpeed = leftSpeed;
+  ctx_rightSpeed = rightSpeed;
   
 
 
@@ -278,11 +287,11 @@ int main(int argc, const char *argv[]) {
      left= wb_differential_wheels_get_left_encoder();
      right = wb_differential_wheels_get_right_encoder(); 
 
-      data_emitted = malloc(4 * sizeof(double));
+      data_emitted = malloc(5 * sizeof(double));
       
-      memcpy(data_emitted, fitness, 4 * sizeof(double));
+      memcpy(data_emitted, fitness, 5 * sizeof(double));
       
-      wb_emitter_send(emitter, data_emitted, 4 * sizeof(double));
+      wb_emitter_send(emitter, data_emitted, 5 * sizeof(double));
       emitter_counter = steps;
       
        //reset the wheel encoders and sum
@@ -296,10 +305,13 @@ int main(int argc, const char *argv[]) {
       right = 0; 
       old_left = 0; 
       old_right = 0;
-       fitness[0]= 0; 
+      ctx_leftSpeed = 0;
+      ctx_rightSpeed = 0;
+ fitness[0]= 0; 
  fitness[1] =0;
  fitness[2] =0;
  fitness[3] =0; 
+ fitness[4] =0; 
       
     }
   }
