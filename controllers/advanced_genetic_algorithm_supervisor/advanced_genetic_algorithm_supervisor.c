@@ -91,17 +91,22 @@ void plot_fitness(int generation, double best_fitness, double average_fitness) {
 // compute fitness
 double measure_fitness() {
   double fitness = 0.0;
-  double data_received[4];
+  double data_received[5];
   
    if (wb_receiver_get_queue_length(receiver) > 0) {
 
-    memcpy(data_received, wb_receiver_get_data(receiver), 4 * sizeof(double));
+    memcpy(data_received, wb_receiver_get_data(receiver), 5 * sizeof(double));
     
     double fallPunish = data_received[0];
     double sumPunish = data_received[1];
     double speedPunish = data_received[2];
     double reward = data_received[3];
-
+    double circlePunish = data_received[4];
+    
+    if (circlePunish < 0)
+      circlePunish = 0;
+    printf("%f\n",circlePunish);
+// + (double)(0.5*(double)circlePunish)
     double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.5*(double)speedPunish) + (double)(1.5* (double)fallPunish));
     fitness = (((reward *0.3) - punish) + 10000) /100;
     if(fitness < 0)
