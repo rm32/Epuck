@@ -6,8 +6,13 @@ WorldInfo {
   ]
 }
 Viewpoint {
+<<<<<<< HEAD
+  orientation 0.313941 0.773514 0.550561 3.97238
+  position -0.567638 2.11019 -0.399869
+=======
   orientation 0.532067 0.783581 0.320789 4.97151
   position -1.37606 1.60495 0.692593
+>>>>>>> origin/master
 }
 Background {
   skyColor [
@@ -170,8 +175,8 @@ DEF wall Solid {
   }
 }
 DEF ROBOT E-puck {
-  translation 0.0574836 0.002 -0.0565676
-  rotation 0.00163875 0.999999 0.000547251 4.20572
+  translation 0.0931547 0.002 0.253181
+  rotation 0.00145885 0.999999 -0.000297689 3.15852
   controller "advanced_genetic_algorithm"
   emitter_channel 2
   groundSensorsSlot [

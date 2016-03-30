@@ -24,8 +24,8 @@
 #define OUTPUT NUM_WHEELS
 #define time 120
 
-static const int POPULATION_SIZE = 50;
-static const int NUM_GENERATIONS = 10;
+static const int POPULATION_SIZE = 20;
+static const int NUM_GENERATIONS = 50;
 static const char *FILE_NAME = "fittest.txt";
 
 static int time_step;
@@ -90,47 +90,27 @@ void plot_fitness(int generation, double best_fitness, double average_fitness) {
 
 // compute fitness
 double measure_fitness() {
-
-  // sensors, wheels  and encoder
-  double data_received[NUM_SENSORS + NUM_WHEELS + 1];
-
-  double s[NUM_SENSORS * sizeof(double)];
-  double w[NUM_WHEELS * sizeof(double)];
-  double fitness = 0; 
-   
-  // array so can copy with memcpy
-  double dist[1] = {0.0};
+  double fitness = 0.0;
+  double data_received[4];
+  
    if (wb_receiver_get_queue_length(receiver) > 0) {
 
-    memcpy(data_received, wb_receiver_get_data(receiver), (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
+    memcpy(data_received, wb_receiver_get_data(receiver), 4 * sizeof(double));
     
-    memcpy(s, data_received, NUM_SENSORS * sizeof(double));
-    memcpy(w, data_received + NUM_SENSORS, NUM_WHEELS * sizeof(double));
-    memcpy(dist, data_received + NUM_SENSORS + NUM_WHEELS, sizeof(double));
-    
-    
-    double cliff = 1;
-    
-    double sum_sensor_values = 0.0;
- 
-     for (int i = 0; i < NUM_SENSORS- NUM_GROUND_SENSORS; i++){
-        sum_sensor_values += s[i];
-     }
+    double fallPunish = data_received[0];
+    double sumPunish = data_received[1];
+    double speedPunish = data_received[2];
+    double reward = data_received[3];
 
-     for (int j=8; j<NUM_SENSORS; j++){
-       if ((s[j] < -10) && (cliff > 0)){
-         cliff= 0.0;
-       }
-     }
-     
-     
-     
-    // distance (abs so not negative) * 1/sensor (we want large values) * if it fell off
-      fitness = fabs(dist[0]) * 1/sum_sensor_values * cliff ;
-    // prepare for receiving next genes packet
-    wb_receiver_next_packet(receiver);
+    double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.5*(double)speedPunish) + (double)(1.5* (double)fallPunish));
+    fitness = (((reward *0.3) - punish) + 10000) /10;
+    if(fitness < 0)
+    {
+      fitness = 0; 
+    }
+     wb_receiver_next_packet(receiver);
   }
-
+ 
   return fitness;
 }
 
@@ -260,9 +240,15 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
 
+<<<<<<< HEAD
+  if(demo)
+    run_demo();
+     
+=======
   if (demo)
     run_demo();
 
+>>>>>>> origin/master
   // run GA optimization
   run_optimization();
   

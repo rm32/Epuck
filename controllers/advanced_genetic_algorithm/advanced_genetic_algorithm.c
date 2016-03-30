@@ -5,6 +5,8 @@
 #include <webots/receiver.h>
 #include <webots/emitter.h>
 #include <webots/distance_sensor.h>
+#include <webots/light_sensor.h>
+#include <webots/accelerometer.h>
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
@@ -21,10 +23,6 @@
 #define INPUT (NUM_SENSORS +2)
 #define OUTPUT NUM_WHEELS
 
-#define WHEEL_RADIUS 0.0205
-#define AXLE_LENGTH 0.052
-#define ENCODER_RESOLUTION 159.23
-
 // see braitenberg
 #define RANGE (1024/2)
 
@@ -36,6 +34,7 @@ int steps;
 int counter;
 double sensor_values[NUM_SENSORS];
 double sensors[NUM_SENSORS];
+double lightSensors[8];
 double speed[2] ; 
 double ctx[2];
 
@@ -49,16 +48,13 @@ double distance[1] = {0.0};
 double* data_emitted;
 double matrix[INPUT][HIDDEN];
 double matrix2[HIDDEN][OUTPUT];
-
-double speed[2];
-double encoderTest[2] = {0.0,0.0};
-double braitenberg_coefficients[8][2] =
-{ {150, -35}, {100, -15}, {80, -10}, {-10, -10},
-    {-10, -10}, {-10, 80}, {-30, 100}, {-20, 150} };
+double hidden[4] = {0,0,0,0};
 
 WbDeviceTag receiver;              // for receiving genes from Supervisor
 WbDeviceTag emitter;                // for sending the fitness value to the supervisor
+WbDeviceTag accelerometer; 
 
+double fitness[4] = {0,0,0,0}; 
 
 
 // check if a new set of genes was sent by the Supervisor
@@ -97,59 +93,56 @@ static double clip_value(double value, double min_max) {
 }
 
 
-
-double sigmoid(double x)
-{
-     double exp_value;
-     double return_value;
-
-     /*** Exponential calculation ***/
-     exp_value = exp((double) -x);
-
-     /*** Final sigmoid value ***/
-     return_value = 1 / (1 + exp_value);
-
-     return return_value;
-}
-
-double hidden[4] = {0,0,0,0};
-
-
-
+double old_left = 0; 
+double old_right = 0; 
 
 void sense_compute_and_actuate() {
 
+  left= wb_differential_wheels_get_left_encoder();
+  right = wb_differential_wheels_get_right_encoder(); 
+  
+  
+  double leftSpeed =  wb_differential_wheels_get_left_speed(); 
+  double rightSpeed = wb_differential_wheels_get_right_speed();
+  
+double sum = 0; 
 for (int i = 0; i < NUM_SENSORS - NUM_GROUND_SENSORS; i++){
     
     //get the sumed value of each sensor so we can calculate the mean value before sending them back
     sensor_values[i] = wb_distance_sensor_get_value(sensors[i]);
+    sum += sensor_values[i]; 
 }
 
-
-  
 // check to see if the     
 for (int i = (NUM_SENSORS - NUM_GROUND_SENSORS); i < NUM_SENSORS; i++){
     if (wb_distance_sensor_get_value(sensors[i]) > 800){
-      sensor_values[i] += -1.0;
+      //sensor_values[i] += -1.0;
+      fitness[0]++;
     }
 }
+  
+  if(sum > 5000)
+  {
+    fitness[1]++;
+  }
+  
+ 
+  
+  if((leftSpeed < 0) || (rightSpeed < 0) )
+  {
+    fitness[2]++;
+  }
+  
+  
+  if(( left > old_left+3) || ( right > old_right+3) )
+  {
+    fitness[3]++;
+  }
+  old_left = left; 
+  old_right = right;  
 
 
-for (int i = 0; i < 2; i++) {
-  speed[i] = 0.0;
-   for (int j = 0; j < 8; j++) {
-       speed[i] += braitenberg_coefficients[j][i] * (1.0 - (sensor_values[j] / RANGE));
-    }
-}
-
-if(speed[0] > 0)
-{
-    encoderTest[0] += fabs(wb_differential_wheels_get_left_encoder());
-}else if(speed[1] > 0){
-    encoderTest[1] += fabs(wb_differential_wheels_get_right_encoder()); 
-}
-
-wb_differential_wheels_set_encoders(0.0, 0.0);
+  
 
 
 
@@ -162,7 +155,8 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
     for (int j = 0; j < NUM_SENSORS; j++){
         double weight = matrix[j][i];
         double input = sensor_values[j];
-        sum += weight *input;
+        sum += weight * (1.0 - (input / RANGE));
+
     }
 
     //add the recurrent connections on the output layer from the previous time step
@@ -170,7 +164,7 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
     sum += matrix[NUM_SENSORS + 1][i] * (1.0 - (ctx[(i + 1)%2] / RANGE));
 
     //apply the activation function to the weighted inputs
-    hidden[i] = sigmoid(sum);
+    hidden[i] = tanh(sum);
   }
   
   
@@ -183,8 +177,7 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
     for (int j = 0; j < HIDDEN; j++){
         double weight = matrix2[j][i];
         double input = hidden[j];
-         
-      sum += weight *input;
+      sum += weight * input;
     }
  
     //apply the activation function to the weighted inputs
@@ -198,11 +191,11 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
 
 
   //accumulate wheel speeds to calculate the average afterwards
-  mean_wheel_speed[0] += wheel_speed[0];
-  mean_wheel_speed[1] += wheel_speed[1];
+ // mean_wheel_speed[0] += wheel_speed[0];
+ // mean_wheel_speed[1] += wheel_speed[1];
 
   // actuate e-puck wheels
-  wb_differential_wheels_set_speed(200*wheel_speed[0], 200*wheel_speed[1]);
+  wb_differential_wheels_set_speed(200*wheel_speed[0], 200* wheel_speed[1]);
 
   //save current speeds to be used as previous speed on next run
   ctx[0] = wheel_speed[0];
@@ -210,25 +203,18 @@ wb_differential_wheels_set_encoders(0.0, 0.0);
 }
 
 
-
-static void compute_odometry() {
-  wb_differential_wheels_enable_encoders(time_step);
-  double l= encoderTest[0] ;// wb_differential_wheels_get_left_encoder();
-  double r = encoderTest[1]; //wb_differential_wheels_get_right_encoder(); 
-  left = l*10000 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by left wheel in meter
-  right = r*10000 / ENCODER_RESOLUTION * WHEEL_RADIUS; // distance covered by right wheel in meter
-}
-
-
 int main(int argc, const char *argv[]) {
   
   wb_robot_init();  // initialize Webots
+  
+  accelerometer = wb_robot_get_device("accelerometer");
+
 
   // find simulation step in milliseconds (WorldInfo.basicTimeStep)
   time_step = wb_robot_get_basic_time_step();
     
   //initialize the emitter counter to send data back to the supervisor  
-  int emitter_counter = (time * 1000)/time_step;
+  int emitter_counter = ((time * 1000)/time_step) - 1;
 
   //copy emitter counter to a variable to use the initial value later
   steps = emitter_counter;
@@ -250,6 +236,13 @@ int main(int argc, const char *argv[]) {
     sensors[i + 8] = wb_robot_get_device(name);
     wb_distance_sensor_enable(sensors[i + 8], time_step);
  } 
+
+
+  for (int i = 0; i < 8; i++) {
+    sprintf(name, "ls%d", i);
+    lightSensors[i] = wb_robot_get_device(name);
+    wb_light_sensor_enable(lightSensors[i], time_step);
+ } 
    
     
   // the emitter to send fitness value to supervisor
@@ -266,6 +259,8 @@ int main(int argc, const char *argv[]) {
   
   //enable the encoders to measure distance traveled
   wb_differential_wheels_enable_encoders(time_step);
+  wb_accelerometer_enable(accelerometer,time_step);
+
   
   //load_best();
   // run until simulation is restarted
@@ -276,27 +271,18 @@ int main(int argc, const char *argv[]) {
    sense_compute_and_actuate();
     
    emitter_counter--;
+   
+   //printf("emitter counter %i \n", emitter_counter);
     
    if (emitter_counter == 0){
-      compute_odometry();
+     left= wb_differential_wheels_get_left_encoder();
+     right = wb_differential_wheels_get_right_encoder(); 
 
-     data_emitted = malloc((NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
+      data_emitted = malloc(4 * sizeof(double));
       
-      mean_wheel_speed[2] = fabs(left + right)/2; //calculate the change
-
-      if(mean_wheel_speed[2] < 0)
-      {
-        mean_wheel_speed[2] = 0; 
-      }
-  
-      memcpy(data_emitted, sensor_values, NUM_SENSORS * sizeof(double));
+      memcpy(data_emitted, fitness, 4 * sizeof(double));
       
-      //Append wheel speed (and encoder) to data_emitter
-      memcpy(data_emitted + NUM_SENSORS, mean_wheel_speed, (NUM_WHEELS + 1) * sizeof(double));
-      
-      
-      // send data to supervisor for evaluation and reset the counter
-      wb_emitter_send(emitter, data_emitted, (NUM_SENSORS + NUM_WHEELS + 1) * sizeof(double));
+      wb_emitter_send(emitter, data_emitted, 4 * sizeof(double));
       emitter_counter = steps;
       
        //reset the wheel encoders and sum
@@ -305,8 +291,15 @@ int main(int argc, const char *argv[]) {
         sensor_values[i] = 0.0;
       }
       
-      encoderTest[0] = 0; 
-      encoderTest[1] = 0; 
+       wb_differential_wheels_set_encoders (0.0,0.0);
+      left = 0; 
+      right = 0; 
+      old_left = 0; 
+      old_right = 0;
+       fitness[0]= 0; 
+ fitness[1] =0;
+ fitness[2] =0;
+ fitness[3] =0; 
       
     }
   }
