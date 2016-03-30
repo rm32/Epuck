@@ -25,7 +25,7 @@
 #define time 120
 
 static const int POPULATION_SIZE = 20;
-static const int NUM_GENERATIONS = 50;
+static const int NUM_GENERATIONS = 40;
 static const char *FILE_NAME = "fittest.txt";
 
 static int time_step;
@@ -103,7 +103,7 @@ double measure_fitness() {
     double reward = data_received[3];
 
     double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.5*(double)speedPunish) + (double)(1.5* (double)fallPunish));
-    fitness = (((reward *0.3) - punish) + 10000) /10;
+    fitness = (((reward *0.3) - punish) + 10000) /100;
     if(fitness < 0)
     {
       fitness = 0; 
@@ -239,16 +239,9 @@ int main(int argc, const char *argv[]) {
   memcpy(robot_trans0, wb_supervisor_field_get_sf_vec3f(robot_translation), sizeof(robot_trans0));
   memcpy(robot_rot0, wb_supervisor_field_get_sf_rotation(robot_rotation), sizeof(robot_rot0));
 
-
-<<<<<<< HEAD
   if(demo)
     run_demo();
-     
-=======
-  if (demo)
-    run_demo();
 
->>>>>>> origin/master
   // run GA optimization
   run_optimization();
   
