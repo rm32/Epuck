@@ -22,10 +22,10 @@
 #define GENOTYPE_SIZE ((HIDDEN*INPUT) +(HIDDEN*OUTPUT))
 #define INPUT (NUM_SENSORS +2)
 #define OUTPUT NUM_WHEELS
-#define time 120
+#define time 600
 
-static const int POPULATION_SIZE = 20;
-static const int NUM_GENERATIONS = 40;
+static const int POPULATION_SIZE = 50;
+static const int NUM_GENERATIONS = 20;
 static const char *FILE_NAME = "fittest.txt";
 
 static int time_step;
@@ -38,7 +38,7 @@ static int display_width, display_height;
 // the GA population
 static Population population;
 
-bool demo = false; 
+bool demo = true; 
 
 // for reading or setting the robot's position and orientation
 static WbFieldRef robot_translation;
@@ -59,7 +59,7 @@ void run_seconds(double seconds) {
 // ------- METHOD USED FOR GRAPH OF FITNESS OVER GENERATIONS -------
 void draw_scaled_line(int generation, double y1, double y2) {
   const double XSCALE = (double)display_width / NUM_GENERATIONS;
-  const double YSCALE = 0.1; //10.0;
+  const double YSCALE = 0.5; //10.0;
   
   wb_display_draw_line(display, (generation - 0.5) * XSCALE, display_height - y1 * YSCALE,
    (generation + 0.5) * XSCALE, display_height - y2 * YSCALE);
@@ -107,8 +107,8 @@ double measure_fitness() {
       circlePunish = 0;
     printf("%f\n",circlePunish);
 // + (double)(0.5*(double)circlePunish)
-    double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.5*(double)speedPunish) + (double)(1.5* (double)fallPunish));
-    fitness = (((reward *0.3) - punish) + 10000) /100;
+    double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.3*(double)speedPunish) + (double)(1.5* (double)fallPunish) + (double)(0.5*(double)circlePunish));
+    fitness = (((reward *0.5) - punish) + 10000) /100;
     if(fitness < 0)
     {
       fitness = 0; 

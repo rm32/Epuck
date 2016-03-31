@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 // part of the population that is cloned from one generation to the next
-static const double ELITE_PART = 0.1;
+static const double ELITE_PART = 0.08;
 
 struct _Population_ {
   Genotype *genotypes;  // genotypes

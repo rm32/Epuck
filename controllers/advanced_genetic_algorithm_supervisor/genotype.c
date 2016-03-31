@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
-static const double MUTATION_PROBABLITY = 0.06;
-static const double MUTATION_DEVIATION  = 0.2;
+static const double MUTATION_PROBABLITY = 0.08;
+static const double MUTATION_DEVIATION  = 0.3;
 
 struct _Genotype_ {
   double *genes;   // genome
