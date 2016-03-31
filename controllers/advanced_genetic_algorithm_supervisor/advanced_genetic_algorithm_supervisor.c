@@ -97,18 +97,21 @@ double measure_fitness() {
 
     memcpy(data_received, wb_receiver_get_data(receiver), 5 * sizeof(double));
     
+    //Initialize counter variables for reward/punishment
     double fallPunish = data_received[0];
     double sumPunish = data_received[1];
     double speedPunish = data_received[2];
     double reward = data_received[3];
     double circlePunish = data_received[4];
     
+    //If the robot goes in circles this will be possitive. We discard if the value is negative
     if (circlePunish < 0)
       circlePunish = 0;
-    printf("%f\n",circlePunish);
-// + (double)(0.5*(double)circlePunish)
+
+    //Fitness score calculation. Afterwards we scale it so the numbers make more sense.
     double punish = ((double)(0.6 * (double) sumPunish) +(double)(0.3*(double)speedPunish) + (double)(1.5* (double)fallPunish) + (double)(0.5*(double)circlePunish));
     fitness = (((reward *0.5) - punish) + 10000) /100;
+
     if(fitness < 0)
     {
       fitness = 0; 
@@ -130,7 +133,7 @@ void evaluate_genotype(Genotype genotype) {
   wb_supervisor_field_set_sf_vec3f(robot_translation, robot_trans0);
   wb_supervisor_field_set_sf_rotation(robot_rotation, robot_rot0);
 
-  // evaluation genotype during one minute
+  // evaluation genotype during a set period of time
   run_seconds(time);
   
   // measure fitness
