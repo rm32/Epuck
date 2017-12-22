@@ -18,3 +18,7 @@ The genotype is encoded as an array of 60 double values, each representing one o
 #### Fitness Function
 The fitness function is split up between reward and punishment. The robot is rewarded the further distance it travels and it is punished if it falls off the maze, gets and stays near the walls or continues rotating with small circle radius. The fitness score is represented by the following function:
 Where D denotes the distance travelled reward, S the penalty of the summed values of the distance sensors, C represents the penalty for going in small circles and G is the penalty for going outside the maze. a, b, c and d are weights for each individual reward/penalty (e.g. falling off the edge of maze is penalized much heavier than standing near a wall). The way the fitness function is calculated is explained in more detail in the "Implementation" section.
+
+## Authors
+* Roshenac Mitchell
+* Ioannis D. Papaioannou
